@@ -1,0 +1,45 @@
+name: lol_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - beautifulsoup4=4.12.3=py310hca03da5_0
+  - blas=1.0=openblas
+  - bottleneck=1.4.2=py310hbda83bc_0
+  - brotli-python=1.0.9=py310h313beb8_9
+  - bzip2=1.0.8=h80987f9_6
+  - ca-certificates=2025.2.25=hca03da5_0
+  - certifi=2025.1.31=pyhd8ed1ab_0
+  - charset-normalizer=3.3.2=pyhd3eb1b0_0
+  - idna=3.7=py310hca03da5_0
+  - libcxx=14.0.6=h848a8c0_0
+  - libffi=3.4.4=hca03da5_1
+  - libgfortran=5.0.0=11_3_0_hca03da5_28
+  - libgfortran5=11.3.0=h009349e_28
+  - libopenblas=0.3.21=h269037a_0
+  - llvm-openmp=14.0.6=hc6e5704_0
+  - ncurses=6.4=h313beb8_0
+  - numexpr=2.10.1=py310h5d9532f_0
+  - numpy=2.0.1=py310h3b2db8e_1
+  - numpy-base=2.0.1=py310ha9811e2_1
+  - openssl=3.4.1=h81ee809_0
+  - pandas=2.2.3=py310hcf29cfe_0
+  - pip=25.0=py310hca03da5_0
+  - pysocks=1.7.1=py310hca03da5_0
+  - python=3.10.16=hb885b13_1
+  - python-dateutil=2.9.0post0=py310hca03da5_2
+  - python-tzdata=2023.3=pyhd3eb1b0_0
+  - pytz=2024.1=py310hca03da5_0
+  - readline=8.2=h1a28f6b_0
+  - requests=2.32.3=py310hca03da5_1
+  - setuptools=75.8.0=py310hca03da5_0
+  - six=1.16.0=pyhd3eb1b0_1
+  - soupsieve=2.5=py310hca03da5_0
+  - sqlite=3.45.3=h80987f9_0
+  - tk=8.6.14=h6ba3021_0
+  - tzdata=2025a=h04d1e81_0
+  - urllib3=2.3.0=py310hca03da5_0
+  - wheel=0.45.1=py310hca03da5_0
+  - xz=5.6.4=h80987f9_1
+  - zlib=1.2.13=h18a0788_1
+prefix: /Users/kylesavino/miniforge3/envs/lol_env
