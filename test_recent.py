@@ -344,7 +344,6 @@ p2
 roles = ["TOP", "JUNGLE", "MID", "BOT", "SUPPORT"]
 games_data = []
 
-# find every "game X:" position so we can slice reliably even with odd spacing
 pattern = re.compile(r'game\s+\d+\s*:', re.IGNORECASE)
 match_positions = [m.start() for m in pattern.finditer(data_string)]
 match_positions.append(len(data_string))               # sentinel end‑idx
@@ -355,7 +354,6 @@ for i in range(len(match_positions) - 1):
     winner_line = body.splitlines()[0].strip().lower()
     blue_win = 1 if ("blue" in winner_line and "win" in winner_line) else 0
 
-    # collect raw rank strings
     blue_raw, red_raw = [], []
     current = "blue"
     for line in body.splitlines()[1:]:
