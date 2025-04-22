@@ -30,11 +30,10 @@ RANK_STRATEGY  = "impute" # "impute" or "drop"
 
 RANDOM_SEED    = 42     # Seed for train/test split consistency
 NUM_RUNS       = 10     # <--- Number of times to run training/evaluation
-SPLIT_RATIO    = (0.8, 0.1, 0.1) # <--- Train/Validation/Test split (must sum to 1)
+SPLIT_RATIO    = (0.8, 0.1, 0.1) # train/test/validation
 
 roles          = ["TOP","JUNGLE","MID","BOT","SUPPORT"]
 
-# --- Set global random seeds for better reproducibility (optional, may not guarantee perfect results) ---
 # tf.random.set_seed(RANDOM_SEED)
 # np.random.seed(RANDOM_SEED)
 # -----------------------------------------------------------------------------------------------------
@@ -306,13 +305,6 @@ if best_model_weights is not None:
 else:
     print(f"No models were successfully trained in {NUM_RUNS} runs.")
 
-
-# --- Optional: Human Eval Section (Needs careful review if using) ---
-# Remember that human eval samples should ideally be drawn *after* the
-# final data split and reflect the same preprocessing. If the files
-# exist from previous runs, they might not align perfectly.
-# (Code for human eval section omitted for brevity, but would follow here if needed)
-# --- -----------------------------------------------------------
 
 print("\nScript finished.")
 
