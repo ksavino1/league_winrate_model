@@ -22,7 +22,7 @@ JSON_PATHS     = [
     "league_match_data_20250415_123727.json",
     "league_match_data_20250421_232906.json"
 ]
-QUEUE_TYPES    = None  # None for all queues, "ranked_solo_duo_games" for soloduo
+QUEUE_TYPES    = "ranked_solo_duo_games"  # None for all queues, "ranked_solo_duo_games" for soloduo
 USE_CHAMPS     = False   # <--- Feature flags
 USE_RANKS      = True   # <--- Feature flags
 USE_DIFFS      = False  # <--- Feature flags
@@ -30,10 +30,11 @@ RANK_STRATEGY  = "impute" # "impute" or "drop"
 
 RANDOM_SEED    = 42     # Seed for train/test split consistency
 NUM_RUNS       = 10     # <--- Number of times to run training/evaluation
-SPLIT_RATIO    = (0.8, 0.1, 0.1) # train/test/validation
+SPLIT_RATIO    = (0.8, 0.1, 0.1) # <--- Train/Validation/Test split (must sum to 1)
 
 roles          = ["TOP","JUNGLE","MID","BOT","SUPPORT"]
 
+# --- Set global random seeds for better reproducibility (optional, may not guarantee perfect results) ---
 # tf.random.set_seed(RANDOM_SEED)
 # np.random.seed(RANDOM_SEED)
 # -----------------------------------------------------------------------------------------------------
@@ -177,9 +178,9 @@ print(f"Overall unique data Blue-win rate: {y.mean():.4f}")
 # ---------------------------------------------------------------
 # 6) MULTIPLE RUNS: TRAIN, EVALUATE, FIND BEST
 # ---------------------------------------------------------------
-best_test_acc = -1.0
+best_val_acc = -1.0 # <--- Track best VALIDATION accuracy
 best_model_weights = None
-all_test_accuracies = []
+all_test_accuracies = [] # Keep track of test accuracies for reporting mean/std dev
 
 # --- Data Split (80/10/10) ---
 train_size, val_size, test_size = SPLIT_RATIO
@@ -213,7 +214,6 @@ for run in range(NUM_RUNS):
     print(f"\n--- Starting Run {run + 1}/{NUM_RUNS} ---")
     start_run_time = time.time()
 
-    # --- Build Model (define INSIDE loop for fresh init) ---
     model = Sequential([
         Dense(128, activation="relu", input_shape=(X_train.shape[1],)),
         Dropout(0.3),
@@ -236,19 +236,24 @@ for run in range(NUM_RUNS):
                         verbose=0) # Suppress epoch output within the loop
     # --------------------
 
-    # --- Evaluate Model on TEST set ---
+    # --- Evaluate Model on VALIDATION set for selection ---
+    val_loss, val_acc = model.evaluate(X_val, y_val, verbose=0) # <--- EVALUATE ON VALIDATION SET
+    print(f"  Run {run + 1} Validation Accuracy: {val_acc:.4f} (Loss: {val_loss:.4f})")
+    # -----------------------------------------------------
+
+    # --- Evaluate on TEST set for reporting purposes ONLY (e.g., mean/std dev across runs) ---
     test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
     all_test_accuracies.append(test_acc)
     print(f"  Run {run + 1} Test Accuracy: {test_acc:.4f} (Loss: {test_loss:.4f})")
-    # ----------------------------------
+    # -------------------------------------------------------------------------------------
 
-    # --- Check if this is the best model so far ---
-    if test_acc > best_test_acc:
-        print(f"  *** New best test accuracy found: {test_acc:.4f} (previous best: {best_test_acc:.4f}) ***")
-        best_test_acc = test_acc
-        # Save the weights of the best model
+    # --- Use validation accuracy, shoutout cthorezz ---
+    if val_acc > best_val_acc:
+        print(f"  *** New best validation accuracy found: {val_acc:.4f} (previous best: {best_val_acc:.4f}) ***")
+        best_val_acc = val_acc
+        # Save the weights of the best model (based on validation performance)
         best_model_weights = model.get_weights()
-    # --------------------------------------------
+    # ------------------------------------------------------------------------
     run_time = time.time() - start_run_time
     print(f"  Run {run + 1} finished in {run_time:.2f} seconds.")
 
@@ -261,16 +266,12 @@ total_time = time.time() - start_total_time
 print(f"Total time for {NUM_RUNS} runs: {total_time:.2f} seconds.")
 
 if best_model_weights is not None:
-    print(f"\nBest test accuracy across {NUM_RUNS} runs: {best_test_acc:.4f}")
-    print(f"Mean test accuracy: {np.mean(all_test_accuracies):.4f}")
-    print(f"Std dev test accuracy: {np.std(all_test_accuracies):.4f}")
+    print(f"\nBest validation accuracy across {NUM_RUNS} runs: {best_val_acc:.4f}") # <--- Report best validation accuracy
+    print(f"Mean test accuracy across all runs: {np.mean(all_test_accuracies):.4f}")
+    print(f"Std dev test accuracy across all runs: {np.std(all_test_accuracies):.4f}")
 
-    # --- Construct Filename ---
-    filename = f"ff_nn_acc={best_test_acc}_queue={QUEUE_TYPES}_champs={USE_CHAMPS}_ranks={USE_RANKS}_diffs={USE_DIFFS}.keras"
-    # --------------------------
-
-    # --- Create final model instance and load best weights ---
-    print(f"\nSaving best model to '{filename}'...")
+    # --- Create final model instance and load best weights (selected via validation) ---
+    print(f"\nLoading best model (selected via validation set)...")
     final_model = Sequential([
         Dense(128, activation="relu", input_shape=(X_train.shape[1],)),
         Dropout(0.3),
@@ -278,28 +279,29 @@ if best_model_weights is not None:
         Dropout(0.2),
         Dense(1, activation="sigmoid"),
     ])
-    # Compile is necessary before loading weights if the optimizer state is needed,
-    # but often just loading weights is sufficient for inference/saving.
-    # For saving the full model state including optimizer, compile it.
+
     final_model.compile(optimizer="adam",
                         loss="binary_crossentropy",
                         metrics=["accuracy"])
     final_model.set_weights(best_model_weights)
     # --------------------------------------------------------
 
-    # --- Save the best model ---
+    print("\nEvaluating the final selected model on the unseen test set:")
+    final_test_loss, final_test_acc = final_model.evaluate(X_test, y_test, verbose=0) # <--- FINAL UNBIASED EVALUATION
+    print(f"  Final Test Accuracy: {final_test_acc:.4f}")
+    print(f"  Final Test Loss: {final_test_loss:.4f}")
+    # -----------------------------------------------------------------------------
+
+    # --- Construct Filename using the FINAL TEST accuracy of the selected model ---
+    filename = f"ff_nn_acc={final_test_acc:.4f}_queue={QUEUE_TYPES}_champs={USE_CHAMPS}_ranks={USE_RANKS}_diffs={USE_DIFFS}.keras" # <--- Use final test accuracy
+    # --------------------------------------------------------------------------
+
+    print(f"\nSaving best model to '{filename}'...")
     final_model.save(filename)
     print("Best model saved successfully.")
-    # ---------------------------
-
-    # --- Optional: Evaluate the final loaded model again for confirmation ---
-    print("\nEvaluating the saved best model on the test set:")
-    final_loss, final_acc = final_model.evaluate(X_test, y_test, verbose=0)
-    print(f"  Test Accuracy: {final_acc:.4f}")
-    print(f"  Test Loss: {final_loss:.4f}")
 
     print("\nClassification Report for the best model (Test Set):")
-    y_pred_best = (final_model.predict(X_test) > 0.5).astype(int).flatten()
+    y_pred_best = (final_model.predict(X_test) > 0.5).astype(int).flatten() # Use the final model
     print(classification_report(y_test, y_pred_best, target_names=["Blue loses","Blue wins"]))
 
 else:
@@ -309,6 +311,4 @@ else:
 print("\nScript finished.")
 
 
-
-# accuracies -
-# all queues
+# res 76.33% acc
