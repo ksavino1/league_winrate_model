@@ -22,10 +22,10 @@ JSON_PATHS     = [
     "league_match_data_20250415_123727.json",
     "league_match_data_20250421_232906.json"
 ]
-QUEUE_TYPES    = "ranked_solo_duo_games"  # None for all queues, "ranked_solo_duo_games" for soloduo
+QUEUE_TYPES    = None  # None for all queues, "ranked_solo_duo_games" for soloduo
 USE_CHAMPS     = False   # <--- Feature flags
 USE_RANKS      = True   # <--- Feature flags
-USE_DIFFS      = False  # <--- Feature flags
+USE_DIFFS      = True  # <--- Feature flags
 RANK_STRATEGY  = "impute" # "impute" or "drop"
 
 RANDOM_SEED    = 42     # Seed for train/test split consistency
@@ -107,6 +107,7 @@ if USE_DIFFS:
     diff_cols = [f"{r}_diff" for r in roles]
     initial_count = len(df)
     df = df.dropna(subset=diff_cols)
+    df[diff_cols] = df[diff_cols].mask((df[diff_cols] < -6) | (df[diff_cols] > 6), 0) # remove all extreme diffs
     print(f"Removed {initial_count - len(df)} matches with missing differential data.")
 
 # --- Handle Null Ranks ---
@@ -311,4 +312,5 @@ else:
 print("\nScript finished.")
 
 
-# res 76.33% acc
+# res 76.33% acc for just ranks
+# 54.16% for diffs and champs
