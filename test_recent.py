@@ -338,12 +338,153 @@ p2
 p3
 p4
 p2
+
+game 21: red side wins
+p4
+p3
+p4
+p4
+p4
+
+vs
+p4
+g1
+p3
+p3
+p4
+
+game 22: red side wins
+unranked
+g4
+p4
+p3
+p4
+
+vs
+p3
+p3
+p4
+p4
+p3
+
+game 23: red side wins
+p3
+unranked
+p3
+p3
+p3
+
+vs
+p4
+p3
+p4
+p3
+p3
+
+game 24: red side wins
+p2
+p3
+p4
+p3
+p4
+
+vs
+p2
+p2
+p3
+p2
+p4
+
+game 25: blue side wins
+unranked
+p3
+g3
+unranked
+p3
+
+vs
+g2
+g2
+s2
+p3
+g2
+
+game 26: red side wins
+g2
+p2
+p4
+p4
+p4
+
+vs
+p3
+g3
+g4
+p3
+p4
+
+game 27: blue side wins
+g1
+p4
+p2
+p3
+p3
+
+vs
+p3
+g2
+p1
+p4
+p4
+
+game 28: red side wins
+p3
+p3
+g1
+p3
+p4
+
+vs
+g2
+p3
+p4
+p3
+p3
+
+game 29: blue side wins
+p4
+p4
+p4
+p3
+p4
+
+vs
+p4
+p4
+p4
+p4
+g1
+
+game 30: blue side wins
+p4
+p4
+p3
+p4
+p3
+
+vs
+p4
+p4
+p2
+p3
+g2
 """
 
 # ──────────────────────────────── Parse the text ────────────────────────────────
 roles = ["TOP", "JUNGLE", "MID", "BOT", "SUPPORT"]
 games_data = []
 
+# find every "game X:" position so we can slice reliably even with odd spacing
 pattern = re.compile(r'game\s+\d+\s*:', re.IGNORECASE)
 match_positions = [m.start() for m in pattern.finditer(data_string)]
 match_positions.append(len(data_string))               # sentinel end‑idx
@@ -354,6 +495,7 @@ for i in range(len(match_positions) - 1):
     winner_line = body.splitlines()[0].strip().lower()
     blue_win = 1 if ("blue" in winner_line and "win" in winner_line) else 0
 
+    # collect raw rank strings
     blue_raw, red_raw = [], []
     current = "blue"
     for line in body.splitlines()[1:]:
@@ -376,11 +518,11 @@ for i in range(len(match_positions) - 1):
         row[f"{r}_rank_red"]  = get_elo_from_abbr(red_raw[j])
     games_data.append(row)
 
-if len(games_data) != 20:
-    raise ValueError(f"Expected 20 games; parsed {len(games_data)}")
+if len(games_data) != 30:
+    raise ValueError(f"Expected 30 games; parsed {len(games_data)}")
 
 df_manual = pd.DataFrame(games_data)
-print("Parsed OK — 20 games.")
+print("Parsed OK — 30 games.")
 
 # ────────────────────────── Impute any missing ranks ────────────────────────────
 rank_cols = [f"{r}_rank_{side}" for side in ("blue", "red") for r in roles]
@@ -414,5 +556,5 @@ preds = (probs > 0.5).astype(int).flatten()
 acc = accuracy_score(y_manual, preds)
 correct = (preds == y_manual).sum()
 
-print(f"\nAccuracy on handwritten sample: {acc:.3f} ({correct}/20 correct)\n")
+print(f"\nAccuracy on handwritten sample: {acc:.3f} ({correct}/30 correct)\n")
 print(classification_report(y_manual, preds, target_names=["Blue loses", "Blue wins"]))
